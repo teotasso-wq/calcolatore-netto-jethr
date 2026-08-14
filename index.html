@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dal Lordo al Netto — Simulatore RAL 2026</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600;8..60,700&family=IBM+Plex+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F7F6F2;
+    --ink:#1B2430;
+    --ink-soft:#4A5568;
+    --line:#D8D4C8;
+    --ledger:#EFEDE4;
+    --emerald:#2F6F5E;
+    --emerald-soft:#DCEAE5;
+    --amber:#B5651D;
+    --amber-soft:#F3E4D3;
+    --white:#FFFFFF;
+    --radius:2px;
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0;
+    background:var(--paper);
+    color:var(--ink);
+    font-family:'Inter',sans-serif;
+    line-height:1.5;
+    -webkit-font-smoothing:antialiased;
+  }
+  .serif{font-family:'Source Serif 4', serif;}
+  .mono{font-family:'IBM Plex Mono', monospace; font-variant-numeric: tabular-nums;}
+
+  a{color:var(--emerald);}
+
+  .wrap{max-width:920px; margin:0 auto; padding:0 28px;}
+
+  header.top{
+    border-bottom:1px solid var(--line);
+    padding:22px 0;
+  }
+  header.top .wrap{display:flex; align-items:baseline; justify-content:space-between; gap:16px; flex-wrap:wrap;}
+  .brand{font-family:'IBM Plex Mono', monospace; font-size:13px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ink-soft);}
+  .brand b{color:var(--ink);}
+
+  .hero{padding:64px 0 40px;}
+  .eyebrow{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:12px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color:var(--emerald);
+    margin-bottom:14px;
+  }
+  h1{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:clamp(32px,5vw,48px);
+    line-height:1.08;
+    margin:0 0 18px;
+    letter-spacing:-0.01em;
+  }
+  .hero p.lead{
+    font-size:17px;
+    color:var(--ink-soft);
+    max-width:60ch;
+    margin:0;
+  }
+
+  /* --- form --- */
+  .panel{
+    background:var(--white);
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    padding:32px;
+    margin-top:36px;
+  }
+  .form-row{display:flex; gap:24px; flex-wrap:wrap; align-items:flex-end;}
+  .field{flex:1 1 220px;}
+  label{
+    display:block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  input[type="number"]{
+    width:100%;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:22px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  input[type="number"]:focus{outline:2px solid var(--emerald); outline-offset:1px;}
+  select{
+    width:100%;
+    font-family:'Inter', sans-serif;
+    font-size:15px;
+    padding:12px 14px;
+    border:1px solid var(--line);
+    border-radius:var(--radius);
+    background:var(--paper);
+    color:var(--ink);
+  }
+  select:focus{outline:2px solid var(--emerald); outline-offset:1px;}
+
+  .btn{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:13px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+    background:var(--ink);
+    color:var(--paper);
+    border:none;
+    padding:14px 28px;
+    border-radius:var(--radius);
+    cursor:pointer;
+    transition:background .15s ease;
+  }
+  .btn:hover{background:var(--emerald);}
+  .btn:focus-visible{outline:2px solid var(--emerald); outline-offset:2px;}
+
+  .assumptions-note{
+    font-size:13px;
+    color:var(--ink-soft);
+    margin-top:18px;
+    padding-top:18px;
+    border-top:1px dashed var(--line);
+  }
+
+  /* --- results --- */
+  #results{display:none; margin-top:44px;}
+  #results.visible{display:block; animation:fade .35s ease;}
+  @keyframes fade{from{opacity:0; transform:translateY(6px);} to{opacity:1; transform:translateY(0);}}
+
+  .headline-results{
+    display:flex;
+    gap:0;
+    border:1px solid var(--line);
+    background:var(--white);
+    flex-wrap:wrap;
+  }
+  .stat{
+    flex:1 1 240px;
+    padding:26px 28px;
+    border-right:1px solid var(--line);
+  }
+  .stat:last-child{border-right:none;}
+  .stat .stat-label{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    margin-bottom:8px;
+  }
+  .stat .stat-value{
+    font-family:'Source Serif 4', serif;
+    font-weight:600;
+    font-size:34px;
+    color:var(--emerald);
+    line-height:1;
+  }
+  .stat.tax .stat-value{color:var(--amber);}
+  .stat .stat-sub{font-size:12px; color:var(--ink-soft); margin-top:6px;}
+
+  /* ledger / waterfall */
+  .ledger{
+    margin-top:28px;
+    border:1px solid var(--line);
+    background:var(--white);
+  }
+  .ledger-title{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    color:var(--ink-soft);
+    padding:18px 24px 0;
+  }
+  .ledger-row{
+    display:grid;
+    grid-template-columns: 1fr auto auto;
+    gap:16px;
+    align-items:center;
+    padding:13px 24px;
+    border-top:1px solid var(--ledger);
+  }
+  .ledger-row.first{border-top:none;}
+  .ledger-row .label{font-size:14.5px;}
+  .ledger-row .label .tag{
+    display:inline-block;
+    font-family:'IBM Plex Mono', monospace;
+    font-size:10px;
+    padding:1px 6px;
+    border-radius:2px;
+    margin-left:8px;
+    vertical-align:middle;
+    letter-spacing:0.03em;
+  }
+  .tag.verificato{background:var(--emerald-soft); color:var(--emerald);}
+  .tag.stimato{background:var(--amber-soft); color:var(--amber);}
+  .ledger-row .amount{
+    font-family:'IBM Plex Mono', monospace;
+    font-size:14.5px;
+    text-align:right;
+    min-width:110px;
+  }
+  .ledger-row .amount.negative{color:var(--amber);}
+  .ledger-row .amount.positive{color:var(--emerald);}
+  .ledger-row .bar-wrap{width:120px;}
+  .bar-track{height:6px; background:var(--ledger); border-radius:3px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--amber); border-radius:3px;}
+  .ledger-row.total{
+    background:var(--emerald-soft);
+    font-weight:600;
+  }
+  .ledger-row.total .amount{color:var(--emerald); font-size:16px;}
+  .ledger-row.subtotal{background:var(--paper); font-style:italic; color:var(--ink-soft);}
+
+  .breakdown-cols{display:grid; grid-template-columns:1fr 1fr; gap:24px; margin-top:24px;}
+  @media(max-width:720px){.breakdown-cols{grid-template-columns:1fr;}}
+
+  @media(max-width:520px){
+    .wrap{padding:0 18px;}
+    .hero{padding:40px 0 28px;}
+    .panel{padding:22px 18px;}
+    .form-row{gap:16px;}
+    .headline-results{flex-direction:column;}
+    .stat{border-right:none; border-bottom:1px solid var(--line); padding:20px;}
+    .stat:last-child{border-bottom:none;}
+    .ledger-row{
+      grid-template-columns:1fr auto;
+      gap:8px 12px;
+      padding:12px 16px;
+    }
+    .ledger-row .bar-wrap{display:none;}
+    .ledger-row .amount{min-width:0; font-size:13.5px;}
+    .ledger-row .label{font-size:13.5px;}
+    .ledger-title{padding:16px 16px 0;}
+    .mini-table td{padding:9px 16px;}
+    .assumptions-block{padding:20px 18px;}
+  }
+
+  .mini-table{border:1px solid var(--line); background:var(--white);}
+  .mini-table h3{
+    font-family:'Source Serif 4', serif;
+    font-size:16px;
+    margin:0;
+    padding:16px 20px;
+    border-bottom:1px solid var(--line);
+  }
+  .mini-table table{width:100%; border-collapse:collapse;}
+  .mini-table td{padding:9px 20px; font-size:13.5px; border-top:1px solid var(--ledger);}
+  .mini-table tr:first-child td{border-top:none;}
+  .mini-table td.num{font-family:'IBM Plex Mono', monospace; text-align:right;}
+
+  .assumptions-block{
+    margin-top:36px;
+    border:1px solid var(--line);
+    background:var(--white);
+    padding:26px 28px;
+  }
+  .assumptions-block h3{
+    font-family:'Source Serif 4', serif;
+    font-size:18px;
+    margin:0 0 14px;
+  }
+  .assumptions-block ul{margin:0; padding-left:20px;}
+  .assumptions-block li{font-size:13.5px; color:var(--ink-soft); margin-bottom:8px;}
+  .assumptions-block li b{color:var(--ink);}
+
+  footer{
+    margin:56px 0 40px;
+    padding-top:24px;
+    border-top:1px solid var(--line);
+    font-size:12.5px;
+    color:var(--ink-soft);
+  }
+  footer .sources{margin-top:10px; line-height:1.8;}
+  footer .sources a{color:var(--ink-soft); text-decoration:underline; text-decoration-color:var(--line);}
+
+  .legend{display:flex; gap:18px; flex-wrap:wrap; margin-top:14px; font-size:12px; color:var(--ink-soft);}
+  .legend span{display:inline-flex; align-items:center; gap:6px;}
+  .dot{width:8px; height:8px; border-radius:50%;}
+  .dot.verificato{background:var(--emerald);}
+  .dot.stimato{background:var(--amber);}
+  details summary{list-style:none;}
+  details summary::-webkit-details-marker{display:none;}
+  details[open] summary{color:var(--emerald);}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <div class="brand"><b>Dal Lordo al Netto</b> — prototipo di calcolo</div>
+    <div class="brand">Anno fiscale 2026 · Milano</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="eyebrow">Simulatore RAL → Netto</div>
+    <h1>Quanto resta davvero in busta paga?</h1>
+    <p class="lead">Inserisci una retribuzione annua lorda (RAL): il calcolatore mostra il netto mensile e annuale, e ogni voce trattenuta lungo il percorso — contributi, IRPEF, addizionali.</p>
+  </section>
+
+  <div class="panel">
+    <div class="form-row">
+      <div class="field">
+        <label for="ral">RAL — retribuzione annua lorda (€)</label>
+        <input type="number" id="ral" value="32000" min="1" step="500">
+      </div>
+      <div class="field" style="flex:0 1 200px;">
+        <label for="mensilita">Mensilità</label>
+        <select id="mensilita">
+          <option value="12">12 mensilità</option>
+          <option value="13" selected>13 mensilità (13ª inclusa)</option>
+          <option value="14">14 mensilità (13ª + 14ª)</option>
+        </select>
+      </div>
+      <div class="field" style="flex:0 0 auto;">
+        <button class="btn" onclick="calcola()">Calcola netto</button>
+      </div>
+    </div>
+    <div class="assumptions-note">
+      Assunzioni fisse del prototipo: dipendente a tempo indeterminato, residente a Milano, nessun carico di famiglia, nessuna agevolazione particolare, anno intero lavorato. Dettaglio completo delle semplificazioni sotto ai risultati.
+    </div>
+    <div id="input-warning" style="display:none; margin-top:14px; padding:12px 16px; background:var(--amber-soft); border-left:3px solid var(--amber); font-size:13.5px; color:var(--ink);"></div>
+  </div>
+
+  <div id="quirk-note" style="display:none; margin-top:18px; padding:14px 18px; background:var(--emerald-soft); border-left:3px solid var(--emerald); font-size:13.5px; line-height:1.5;"></div>
+
+  <div id="results">
+
+    <div class="headline-results">
+      <div class="stat">
+        <div class="stat-label">Netto mensile stimato</div>
+        <div class="stat-value mono" id="out-netto-mensile">€ 0</div>
+        <div class="stat-sub" id="out-mensilita-sub"></div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Netto annuo</div>
+        <div class="stat-value mono" id="out-netto-annuo">€ 0</div>
+        <div class="stat-sub" id="out-netto-pct"></div>
+      </div>
+      <div class="stat tax">
+        <div class="stat-label">Totale trattenute annue</div>
+        <div class="stat-value mono" id="out-trattenute">€ 0</div>
+        <div class="stat-sub" id="out-trattenute-pct"></div>
+      </div>
+    </div>
+
+    <div class="ledger">
+      <div class="ledger-title">Percorso dal lordo al netto (base annua)</div>
+
+      <div class="ledger-row first">
+        <div class="label"><b>RAL — retribuzione annua lorda</b></div>
+        <div class="bar-wrap"></div>
+        <div class="amount mono" id="row-ral">€ 0</div>
+      </div>
+
+      <div class="ledger-row">
+        <div class="label">Contributi INPS a carico lavoratore (9,19%) <span class="tag verificato">verificato</span></div>
+        <div class="bar-wrap"><div class="bar-track"><div class="bar-fill" id="bar-inps"></div></div></div>
+        <div class="amount mono negative" id="row-inps">− € 0</div>
+      </div>
+
+      <div class="ledger-row subtotal">
+        <div class="label">Imponibile fiscale (RAL − INPS)</div>
+        <div class="bar-wrap"></div>
+        <div class="amount mono" id="row-imponibile">€ 0</div>
+      </div>
+
+      <div class="ledger-row">
+        <div class="label">IRPEF netta (dopo detrazioni lavoro dip. e cuneo fiscale) <span class="tag stimato">fonti concordanti</span></div>
+        <div class="bar-wrap"><div class="bar-track"><div class="bar-fill" id="bar-irpef"></div></div></div>
+        <div class="amount mono negative" id="row-irpef">− € 0</div>
+      </div>
+
+      <div class="ledger-row">
+        <div class="label">Addizionale regionale Lombardia <span class="tag verificato">verificato</span></div>
+        <div class="bar-wrap"><div class="bar-track"><div class="bar-fill" id="bar-reg"></div></div></div>
+        <div class="amount mono negative" id="row-regionale">− € 0</div>
+      </div>
+
+      <div class="ledger-row">
+        <div class="label">Addizionale comunale Milano (0,8%, soglia 23.000€) <span class="tag verificato">verificato</span></div>
+        <div class="bar-wrap"><div class="bar-track"><div class="bar-fill" id="bar-com"></div></div></div>
+        <div class="amount mono negative" id="row-comunale">− € 0</div>
+      </div>
+
+      <div class="ledger-row" id="row-bonus-wrap" style="display:none;">
+        <div class="label">Somma cuneo fiscale non imponibile (RAL ≤ 20.000€) <span class="tag stimato">fonti concordanti</span></div>
+        <div class="bar-wrap"></div>
+        <div class="amount mono positive" id="row-bonus">+ € 0</div>
+      </div>
+
+      <div class="ledger-row" id="row-trattint-wrap" style="display:none;">
+        <div class="label">Trattamento integrativo — ex "Bonus Renzi" (reddito ≤ 15.000€, con capienza) <span class="tag stimato">fonti concordanti</span></div>
+        <div class="bar-wrap"></div>
+        <div class="amount mono positive" id="row-trattint">+ € 0</div>
+      </div>
+
+      <div class="ledger-row total">
+        <div class="label">Netto annuo</div>
+        <div class="bar-wrap"></div>
+        <div class="amount mono" id="row-netto-tot">€ 0</div>
+      </div>
+    </div>
+
+    <div class="breakdown-cols">
+      <div class="mini-table">
+        <h3>Dettaglio IRPEF</h3>
+        <table>
+          <tr><td>Imponibile fiscale</td><td class="num" id="d-imponibile">€ 0</td></tr>
+          <tr><td>IRPEF lorda (scaglioni 23/33/43%)</td><td class="num" id="d-irpef-lorda">€ 0</td></tr>
+          <tr><td>− Detrazione lavoro dipendente</td><td class="num" id="d-detr-lav">€ 0</td></tr>
+          <tr><td>− Ulteriore detrazione cuneo fiscale</td><td class="num" id="d-detr-cuneo">€ 0</td></tr>
+          <tr><td><b>IRPEF netta</b></td><td class="num" id="d-irpef-netta"><b>€ 0</b></td></tr>
+        </table>
+      </div>
+      <div class="mini-table">
+        <h3>Aliquote effettive</h3>
+        <table>
+          <tr><td>Aliquota IRPEF marginale</td><td class="num" id="d-aliquota-marg">0%</td></tr>
+          <tr><td>Aliquota fiscale + contributiva media</td><td class="num" id="d-aliquota-media">0%</td></tr>
+        </table>
+      </div>
+    </div>
+
+    <details class="mini-table" style="margin-top:24px; padding:0;">
+      <summary style="cursor:pointer; padding:16px 20px; font-family:'Source Serif 4', serif; font-size:16px; border-bottom:1px solid var(--line); list-style:none;">▸ Mostra le formule usate per questo calcolo</summary>
+      <table>
+        <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-inps"></td></tr>
+        <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-irpef"></td></tr>
+        <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-detrlav"></td></tr>
+        <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-cuneo"></td></tr>
+        <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-reg"></td></tr>
+        <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-com"></td></tr>
+      </table>
+    </details>
+
+    <div class="legend">
+      <span><span class="dot verificato"></span> Fonte primaria consultata direttamente in sessione (regione.lombardia.it, comune.milano.it, inps.it)</span>
+      <span><span class="dot stimato"></span> Fonti secondarie multiple e concordanti (CAF, Fiscomania, Ipsoa, NoipA/MEF); nessuna fonte primaria unica letta per intero in sessione</span>
+    </div>
+
+    <div class="assumptions-block" style="margin-top:20px;">
+      <h3>Validazione incrociata (RAL 35.000€, Lombardia/Milano, 13 mensilità)</h3>
+      <p style="font-size:13.5px; color:var(--ink-soft); margin:0 0 14px;">Prima di consegnare, ho confrontato l'output di questo calcolatore con tre strumenti esterni sugli stessi identici parametri. Il confronto ha fatto emergere un bug reale (dettagliato sotto), poi corretto.</p>
+      <table style="width:100%; border-collapse:collapse; font-size:13px;">
+        <tr style="border-bottom:1px solid var(--line);"><td style="padding:8px 0;"><b>Fonte</b></td><td style="padding:8px 0; text-align:right;"><b>Netto mensile</b></td><td style="padding:8px 0 8px 12px; color:var(--ink-soft);">Nota</td></tr>
+        <tr style="border-top:1px solid var(--ledger);"><td style="padding:8px 0;">Questo calcolatore</td><td style="padding:8px 0; text-align:right; font-family:'IBM Plex Mono',monospace;">1.997€</td><td style="padding:8px 0 8px 12px; color:var(--ink-soft);">—</td></tr>
+        <tr style="border-top:1px solid var(--ledger);"><td style="padding:8px 0;">Coverflex (coverflex.com)</td><td style="padding:8px 0; text-align:right; font-family:'IBM Plex Mono',monospace;">1.990€</td><td style="padding:8px 0 8px 12px; color:var(--ink-soft);">scarto 0,3% — INPS identico, IRPEF+addizionali unite in una sola voce</td></tr>
+        <tr style="border-top:1px solid var(--ledger);"><td style="padding:8px 0;">stipendionettocalcolatore.it</td><td style="padding:8px 0; text-align:right; font-family:'IBM Plex Mono',monospace;">~1.997€</td><td style="padding:8px 0 8px 12px; color:var(--ink-soft);">scarto ~1€ — unico che mostra il procedimento completo</td></tr>
+        <tr style="border-top:1px solid var(--ledger);"><td style="padding:8px 0;">ipendionetto.it</td><td style="padding:8px 0; text-align:right; font-family:'IBM Plex Mono',monospace;">2.017€</td><td style="padding:8px 0 8px 12px; color:var(--ink-soft);">scarto 1% — non chiede il comune, quindi non applica l'addizionale comunale</td></tr>
+      </table>
+      <p style="font-size:13.5px; color:var(--ink-soft); margin:14px 0 0;">Il confronto con la fonte che mostra il procedimento passo-passo ha rivelato un errore reale in una versione precedente di questo calcolatore: la detrazione lavoro dipendente e il cuneo fiscale vanno calcolati sull'imponibile fiscale (RAL − INPS), non sulla RAL lorda, perché è quella la base del "reddito complessivo" previsto dalla norma. Corretto e verificato: vedi la voce in "Semplificazioni applicate" sotto.</p>
+    </div>
+
+    <details class="assumptions-block" style="padding:0;">
+      <summary style="cursor:pointer; padding:20px 28px; font-family:'Source Serif 4', serif; font-size:18px; list-style:none;">▸ Semplificazioni applicate — click per il dettaglio completo (10 punti, pensati per la discussione in colloquio)</summary>
+      <ul style="padding:0 28px 20px; margin:0 0 0 20px;">
+        <li><b>"Reddito complessivo"</b> ai fini delle soglie di detrazione, cuneo fiscale e addizionale comunale è approssimato con la sola RAL. Nella realtà può includere altri redditi (affitti, altri rapporti di lavoro, ecc.).</li>
+        <li><b>Periodo di lavoro</b> assunto pari all'intero anno (365/365 giorni): nessuna proporzione per assunzioni/cessazioni infra-annuali.</li>
+        <li><b>Addizionali regionale e comunale</b> calcolate sull'anno corrente per semplicità di simulazione. Nella realtà sono trattenute in busta paga con uno sfasamento di un anno (calcolate sul reddito dell'anno precedente, versate in acconto/saldo l'anno successivo).</li>
+        <li><b>Non incluso nel calcolo</b>: welfare aziendale e fringe benefit, buoni pasto, superminimi variabili, straordinari, bonus una tantum, TFR, part-time, contratti atipici o a termine, eventuali carichi di famiglia o altre detrazioni (spese mediche, mutuo, ecc.).</li>
+        <li><b>Contributo aggiuntivo INPS 1%</b> sopra la prima fascia di retribuzione pensionabile (56.224€/anno per il 2026, Circolare INPS n. 6/2026), applicato sulla sola quota eccedente. Non modellato invece il massimale contributivo di 122.295€ per gli iscritti post-1995 (oltre il quale i contributi IVS non sono più dovuti): per RAL sopra quella cifra i contributi qui risultano sovrastimati.</li>
+        <li><b>Detrazione aggiuntiva "comma 1-bis" (fascia 25.000-35.000€)</b> omessa deliberatamente: le fonti trovate riportano importi discordanti (+65€ in una fonte, un riferimento a -75€ in un contesto normativo diverso in un'altra) e non è stato possibile confermarla su una fonte primaria univoca in sessione. Meglio ometterla e segnalarlo che includerla con un valore incerto.</li>
+        <li><b>"Gradino" della detrazione lavoro dipendente attorno ai 15.000€ di RAL:</b> è una caratteristica reale della norma (non un bug del calcolatore) — segnalata direttamente nell'interfaccia quando la RAL inserita ricade in quella fascia.</li>
+        <li><b>CCNL</b> non specificato: non sono modellate voci contrattuali specifiche (es. scatti di anzianità, indennità di settore).</li>
+        <li><b>Trattamento integrativo (ex Bonus Renzi, fino a 1.200€):</b> modellato solo nel caso semplice — reddito ≤ 15.000€ con capienza fiscale, importo pieno. Nella fascia 15.001-28.000€ spetta solo in presenza di detrazioni "qualificate" (mutuo, spese sanitarie, ristrutturazioni...) superiori all'imposta lorda: nel caso standard senza altre detrazioni non spetta, quindi il calcolatore lo azzera correttamente in quella fascia.</li>
+        <li><b>Detrazione lavoro dipendente e cuneo fiscale calcolate sull'imponibile fiscale</b> (RAL − INPS), non sulla RAL lorda: è la base corretta prevista dalla norma per il "reddito complessivo" nel caso semplice senza altri redditi. Verificato per confronto con una fonte terza che mostra il procedimento completo passo-passo.</li>
+        <li>Il calcolo NON sostituisce un cedolino reale né una consulenza di un consulente del lavoro: è un prototipo a scopo dimostrativo.</li>
+      </ul>
+    </details>
+
+  </div>
+
+  <footer>
+    <div>Dati fiscali verificati via ricerca web il 14 agosto 2026, anno d'imposta 2026. Le normative fiscali italiane cambiano ogni anno: verificare sempre i valori aggiornati prima di un uso diverso da quello dimostrativo.</div>
+    <div class="sources">
+      Fonti principali:<br>
+      · Scaglioni IRPEF 2026 (23%/33%/43%) — L. 199/2025 (Legge di Bilancio 2026), art. 1 co. 3<br>
+      · Addizionale regionale Lombardia — <a href="https://www.regione.lombardia.it/bollo-auto-e-tributi-regionali/red-addizionale-regionale-irpef" target="_blank" rel="noopener">regione.lombardia.it</a> (fonte primaria)<br>
+      · Addizionale comunale Milano (0,8%, soglia 23.000€) — <a href="https://servizicrm.comune.milano.it/centro-supporto/KA-01934/Aliquota-addizionale-comunale-IRPEF" target="_blank" rel="noopener">comune.milano.it</a> (fonte primaria)<br>
+      · Detrazione lavoro dipendente (art. 13 TUIR) e ulteriore detrazione cuneo fiscale — L. 207/2024, confermata da L. 199/2025<br>
+      · Trattamento integrativo — D.L. 3/2020, confermato per il 2026<br>
+      · Aliquota contributiva INPS lavoratore 9,19% (L. 335/1995); soglia 1% aggiuntivo 56.224€ — <a href="https://www.inps.it/it/it/inps-comunica/notizie/dettaglio-news-page.news.2026.02.lavoratori-dipendenti-limite-minimo-di-retribuzione-giornaliera-2026.html" target="_blank" rel="noopener">Circolare INPS n. 6/2026, inps.it</a> (fonte primaria)<br>
+      · Validazione incrociata su RAL 35.000€/Lombardia/Milano — <a href="https://www.coverflex.com" target="_blank" rel="noopener">coverflex.com</a>, stipendionettocalcolatore.it, ipendionetto.it (confronto output, non fonti normative)
+    </div>
+  </footer>
+
+</div>
+
+<script>
+function fmt(n){
+  return '€ ' + Math.round(n).toLocaleString('it-IT');
+}
+function fmtSigned(n, sign){
+  return (sign) + ' € ' + Math.round(Math.abs(n)).toLocaleString('it-IT');
+}
+function fmtPct(n){
+  return n.toFixed(1).replace('.', ',') + '%';
+}
+
+// applica aliquote progressive a scaglioni: brackets = [[min,max,rate], ...]
+function progressivo(base, brackets){
+  let imposta = 0;
+  for(const [min, max, rate] of brackets){
+    if(base > min){
+      const quota = Math.min(base, max) - min;
+      imposta += quota * rate;
+    }
+  }
+  return imposta;
+}
+
+const SCAGLIONI_IRPEF = [
+  [0, 28000, 0.23],
+  [28000, 50000, 0.33],
+  [50000, Infinity, 0.43]
+];
+
+const SCAGLIONI_REGIONALE_LOMBARDIA = [
+  [0, 15000, 0.0123],
+  [15000, 28000, 0.0158],
+  [28000, 50000, 0.0172],
+  [50000, Infinity, 0.0173]
+];
+
+function calcolaINPS(ral){
+  // Soglia "prima fascia di retribuzione pensionabile" 2026: 56.224€
+  // (Circolare INPS n. 6 del 30/01/2026 — fonte primaria inps.it).
+  // Oltre la soglia si applica l'1% aggiuntivo a carico lavoratore
+  // (art. 3-ter, D.L. 384/1992) sulla sola quota eccedente.
+  const SOGLIA = 56224;
+  if(ral <= SOGLIA) return ral * 0.0919;
+  return SOGLIA * 0.0919 + (ral - SOGLIA) * 0.1019;
+}
+
+function detrazioneLavoroDipendente(reddito){
+  let base = 0;
+  if(reddito <= 15000){
+    base = 1955;
+  } else if(reddito <= 28000){
+    base = 1910 + 1190 * (28000 - reddito) / 13000;
+  } else if(reddito <= 50000){
+    base = 1910 * (50000 - reddito) / 22000;
+  } else {
+    base = 0;
+  }
+  // NOTA: alcune fonti secondarie citano una detrazione aggiuntiva "comma 1-bis"
+  // per redditi 25.000-35.000€, ma con importi discordanti tra loro (+65€ in una
+  // fonte, -75€ di segno opposto in un contesto normativo diverso in un'altra).
+  // Non avendo trovato un riscontro univoco su fonte primaria, questo dettaglio
+  // è OMESSO deliberatamente dal calcolo (vedi sezione "Semplificazioni" in pagina)
+  // invece di essere incluso con un valore non verificato.
+  return Math.max(0, base);
+}
+
+function ulterioreDetrazioneCuneo(reddito){
+  if(reddito > 20000 && reddito <= 32000){
+    return 1000;
+  } else if(reddito > 32000 && reddito <= 40000){
+    return 1000 * (40000 - reddito) / 8000;
+  }
+  return 0;
+}
+
+function sommaNonImponibileCuneo(reddito){
+  // solo per reddito complessivo <= 20.000, calcolata sul reddito di lavoro dipendente (qui approssimato con RAL)
+  if(reddito <= 8500) return reddito * 0.071;
+  if(reddito <= 15000) return reddito * 0.053;
+  if(reddito <= 20000) return reddito * 0.048;
+  return 0;
+}
+
+function addizionaleComunaleMilano(imponibile){
+  const SOGLIA_ESENZIONE = 23000;
+  const ALIQUOTA = 0.008;
+  if(imponibile <= SOGLIA_ESENZIONE) return 0;
+  return imponibile * ALIQUOTA;
+}
+
+function trattamentoIntegrativo(reddito, irpefLorda, detrLavoro){
+  // Ex "Bonus Renzi" (D.L. 3/2020), confermato per il 2026.
+  // Caso semplice modellato: reddito complessivo <= 15.000€ e capienza
+  // (imposta lorda > detrazione lavoro dipendente) → 1.200€ pieni.
+  // Fascia 15.001-28.000€: spetta solo se detrazioni "qualificate" (mutuo,
+  // sanità, ristrutturazioni...) superano l'imposta lorda — nel nostro caso
+  // standard senza altre detrazioni NON spetta, quindi torna 0.
+  if(reddito <= 15000 && irpefLorda > detrLavoro){
+    return 1200;
+  }
+  return 0;
+}
+
+function calcola(){
+  const ral = parseFloat(document.getElementById('ral').value) || 0;
+  const mensilita = parseInt(document.getElementById('mensilita').value);
+
+  const warningBox = document.getElementById('input-warning');
+  warningBox.style.display = 'none';
+
+  if(!ral || ral <= 0){
+    warningBox.textContent = 'Inserisci una RAL maggiore di zero per calcolare il netto.';
+    warningBox.style.display = 'block';
+    document.getElementById('results').classList.remove('visible');
+    return;
+  }
+  if(ral < 8000){
+    warningBox.textContent = 'RAL molto bassa: sotto una certa soglia le regole reali (part-time, minimi contrattuali CCNL) diventano più rilevanti di quelle modellate qui. Il numero mostrato resta indicativo.';
+    warningBox.style.display = 'block';
+  }
+  if(ral > 300000){
+    warningBox.textContent = 'RAL molto alta: sopra i 200.000€ la normativa 2026 introduce ulteriori tagli alle detrazioni non modellati in questo prototipo (vedi sezione Semplificazioni). Il numero mostrato è una sottostima delle tasse reali.';
+    warningBox.style.display = 'block';
+  }
+
+  const inps = calcolaINPS(ral);
+  const imponibileFiscale = ral - inps;
+
+  const irpefLorda = progressivo(imponibileFiscale, SCAGLIONI_IRPEF);
+  // Le formule di detrazione, cuneo fiscale e trattamento integrativo si basano
+  // per legge sul "reddito complessivo", che (senza altri redditi) coincide con
+  // l'imponibile fiscale (RAL - INPS), NON con la RAL lorda. Verificato per
+  // confronto con una fonte terza che mostra il procedimento passo-passo:
+  // a RAL 35.000€ la detrazione corretta è ~1.582€ (su imponibile 31.783€),
+  // non ~1.302€ (che si otterrebbe usando erroneamente la RAL).
+  const detrLavoro = detrazioneLavoroDipendente(imponibileFiscale);
+  const detrCuneo = ulterioreDetrazioneCuneo(imponibileFiscale);
+  const irpefNetta = Math.max(0, irpefLorda - detrLavoro - detrCuneo);
+
+  const addRegionale = progressivo(imponibileFiscale, SCAGLIONI_REGIONALE_LOMBARDIA);
+  const addComunale = addizionaleComunaleMilano(imponibileFiscale);
+
+  const bonusCuneo = sommaNonImponibileCuneo(imponibileFiscale);
+  const trattInt = trattamentoIntegrativo(imponibileFiscale, irpefLorda, detrLavoro);
+
+  const nettoAnnuo = ral - inps - irpefNetta - addRegionale - addComunale + bonusCuneo + trattInt;
+
+  if(nettoAnnuo > ral && warningBox.style.display === 'none'){
+    warningBox.textContent = 'Il netto risulta superiore alla RAL: non è un errore. Per i redditi bassi la somma esente del cuneo fiscale e il trattamento integrativo (che si aggiungono al netto senza essere tassati) possono superare l\'insieme delle trattenute. È un effetto reale delle misure 2025-2026.';
+    warningBox.style.display = 'block';
+  }
+  const nettoMensile = nettoAnnuo / mensilita;
+
+  const trattenuteTot = ral - nettoAnnuo; // include l'effetto del bonus cuneo (già sottratto/aggiunto)
+  const pctNetto = (nettoAnnuo / ral) * 100;
+  const pctTrattenute = 100 - pctNetto;
+
+  // aliquota marginale
+  let marginale = 23;
+  if(imponibileFiscale > 50000) marginale = 43;
+  else if(imponibileFiscale > 28000) marginale = 33;
+
+  // --- output ---
+  document.getElementById('out-netto-mensile').textContent = fmt(nettoMensile);
+  document.getElementById('out-mensilita-sub').textContent = 'su ' + mensilita + ' mensilità';
+  document.getElementById('out-netto-annuo').textContent = fmt(nettoAnnuo);
+  document.getElementById('out-netto-pct').textContent = fmtPct(pctNetto) + ' della RAL';
+  document.getElementById('out-trattenute').textContent = fmt(trattenuteTot);
+  document.getElementById('out-trattenute-pct').textContent = fmtPct(pctTrattenute) + ' della RAL';
+
+  document.getElementById('row-ral').textContent = fmt(ral);
+  document.getElementById('row-inps').textContent = fmtSigned(inps, '−');
+  document.getElementById('row-imponibile').textContent = fmt(imponibileFiscale);
+  document.getElementById('row-irpef').textContent = fmtSigned(irpefNetta, '−');
+  document.getElementById('row-regionale').textContent = fmtSigned(addRegionale, '−');
+  document.getElementById('row-comunale').textContent = fmtSigned(addComunale, '−');
+  document.getElementById('row-netto-tot').textContent = fmt(nettoAnnuo);
+
+  if(bonusCuneo > 0){
+    document.getElementById('row-bonus-wrap').style.display = 'grid';
+    document.getElementById('row-bonus').textContent = fmtSigned(bonusCuneo, '+');
+  } else {
+    document.getElementById('row-bonus-wrap').style.display = 'none';
+  }
+
+  if(trattInt > 0){
+    document.getElementById('row-trattint-wrap').style.display = 'grid';
+    document.getElementById('row-trattint').textContent = fmtSigned(trattInt, '+');
+  } else {
+    document.getElementById('row-trattint-wrap').style.display = 'none';
+  }
+
+  // bar widths relative to RAL
+  document.getElementById('bar-inps').style.width = Math.min(100, (inps/ral)*100) + '%';
+  document.getElementById('bar-irpef').style.width = Math.min(100, (irpefNetta/ral)*100) + '%';
+  document.getElementById('bar-reg').style.width = Math.min(100, (addRegionale/ral)*100) + '%';
+  document.getElementById('bar-com').style.width = Math.min(100, (addComunale/ral)*100) + '%';
+
+  document.getElementById('d-imponibile').textContent = fmt(imponibileFiscale);
+  document.getElementById('d-irpef-lorda').textContent = fmt(irpefLorda);
+  document.getElementById('d-detr-lav').textContent = '− ' + fmt(detrLavoro).replace('€ ', '');
+  document.getElementById('d-detr-cuneo').textContent = '− ' + fmt(detrCuneo).replace('€ ', '');
+  document.getElementById('d-irpef-netta').innerHTML = '<b>' + fmt(irpefNetta) + '</b>';
+
+  document.getElementById('d-aliquota-marg').textContent = marginale + '%';
+  document.getElementById('d-aliquota-media').textContent = fmtPct(pctTrattenute);
+
+  // note esplicative sulle "scogliere" reali della normativa (non bug):
+  // punti dove +1€ di RAL può ridurre il netto
+  const quirk = document.getElementById('quirk-note');
+  let quirkText = '';
+  if(ral > 8200 && ral <= 8900){
+    quirkText = '<b>Nota sulla RAL inserita:</b> attorno a 8.500€ la percentuale della somma esente del cuneo fiscale scende da 7,1% a 5,3% ma si applica all’intero reddito: superare la soglia di 1€ fa perdere circa 150€ di netto. È il funzionamento reale della norma (L. 207/2024), non un errore del calcolatore.';
+  } else if(imponibileFiscale > 14700 && imponibileFiscale <= 16300){
+    quirkText = '<b>Nota sulla RAL inserita:</b> attorno a un imponibile fiscale (RAL − INPS) di 15.000€ succedono due cose insieme: si perde il trattamento integrativo (1.200€) e la detrazione lavoro dipendente “salta” verso l’alto per come è scritta la formula dell’art. 13 TUIR. L’effetto combinato può ridurre il netto superando questa soglia di 1€. È il funzionamento reale della norma, non un errore del calcolatore.';
+  } else if(imponibileFiscale > 22700 && imponibileFiscale <= 23600){
+    quirkText = '<b>Nota sulla RAL inserita:</b> l’esenzione dell’addizionale comunale di Milano è una soglia, non una franchigia: appena l’imponibile supera i 23.000€, lo 0,8% si applica all’intero imponibile (~184€ in un colpo solo). È il funzionamento reale della delibera comunale, non un errore del calcolatore.';
+  }
+  if(quirkText){
+    quirk.innerHTML = quirkText;
+    quirk.style.display = 'block';
+  } else {
+    quirk.style.display = 'none';
+  }
+
+  // formule usate, con i numeri di QUESTO calcolo
+  document.getElementById('f-inps').innerHTML =
+    'INPS = RAL × 9,19%' + (ral > 56224 ? ' (+ 1% aggiuntivo sulla quota oltre 56.224€)' : '') +
+    ' = ' + fmt(inps);
+  document.getElementById('f-irpef').innerHTML =
+    'IRPEF lorda = 23% fino a 28.000€ + 33% da 28.000 a 50.000€ + 43% oltre, applicata a ' + fmt(imponibileFiscale) +
+    ' = ' + fmt(irpefLorda);
+  let detrLavFormula = 'Detrazione lav. dip. (calcolata sull\'imponibile fiscale, non sulla RAL — vedi nota): ';
+  if(imponibileFiscale <= 15000) detrLavFormula += 'imponibile ≤ 15.000€ → fissa 1.955€';
+  else if(imponibileFiscale <= 28000) detrLavFormula += '1.910 + 1.190 × (28.000 − ' + Math.round(imponibileFiscale) + ') / 13.000 = ' + fmt(detrLavoro);
+  else if(imponibileFiscale <= 50000) detrLavFormula += '1.910 × (50.000 − ' + Math.round(imponibileFiscale) + ') / 22.000 = ' + fmt(detrLavoro);
+  else detrLavFormula += 'imponibile > 50.000€ → nessuna detrazione';
+  document.getElementById('f-detrlav').innerHTML = detrLavFormula;
+  let cuneoFormula = 'Cuneo fiscale (su imponibile fiscale): ';
+  if(imponibileFiscale <= 20000) cuneoFormula += 'sotto 20.000€ → somma esente aggiunta al netto (' + fmt(bonusCuneo) + '), non detrazione IRPEF';
+  else if(imponibileFiscale <= 32000) cuneoFormula += '20.000-32.000€ → detrazione fissa 1.000€';
+  else if(imponibileFiscale <= 40000) cuneoFormula += '1.000 × (40.000 − ' + Math.round(imponibileFiscale) + ') / 8.000 = ' + fmt(detrCuneo);
+  else cuneoFormula += 'oltre 40.000€ → nessuna detrazione aggiuntiva';
+  document.getElementById('f-cuneo').innerHTML = cuneoFormula;
+  document.getElementById('f-reg').innerHTML =
+    'Add. regionale Lombardia: scaglioni 1,23%/1,58%/1,72%/1,73% su ' + fmt(imponibileFiscale) + ' = ' + fmt(addRegionale);
+  document.getElementById('f-com').innerHTML =
+    'Add. comunale Milano: 0,8% su ' + fmt(imponibileFiscale) + ' se > 23.000€, altrimenti 0 → ' + fmt(addComunale);
+
+  const results = document.getElementById('results');
+  results.classList.add('visible');
+  results.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// calcolo automatico al primo caricamento con i valori di default
+window.addEventListener('DOMContentLoaded', function(){
+  calcola();
+  // invio da tastiera = calcola (comportamento atteso da chiunque testi il tool)
+  document.getElementById('ral').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') calcola();
+  });
+});
+</script>
+
+</body>
+</html>

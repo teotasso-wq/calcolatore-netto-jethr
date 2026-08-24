@@ -208,6 +208,7 @@
   }
   .tag.verificato{background:var(--emerald-soft); color:var(--emerald);}
   .tag.stimato{background:var(--amber-soft); color:var(--amber);}
+  .tag.non-verificato{background:#fde2e2; color:#b3261e;}
   .ledger-row .amount{
     font-family:'IBM Plex Mono', monospace;
     font-size:14.5px;
@@ -333,8 +334,15 @@
         <button class="btn" onclick="calcola()">Calcola netto</button>
       </div>
     </div>
+    <div class="form-row" style="margin-top:14px;">
+      <div class="field" style="flex:0 1 260px;">
+        <label for="num-figli">Figli a carico (n.)</label>
+        <input type="number" id="num-figli" value="0" min="0" max="8" step="1">
+      </div>
+    </div>
+    <div id="figli-eta-container" class="form-row" style="margin-top:10px; flex-wrap:wrap;"></div>
     <div class="assumptions-note">
-      Assunzioni fisse del prototipo: dipendente a tempo indeterminato, residente a Milano, nessun carico di famiglia, nessuna agevolazione particolare, anno intero lavorato. Dettaglio completo delle semplificazioni sotto ai risultati.
+      Assunzioni fisse del prototipo: dipendente a tempo indeterminato, residente a Milano, nessuna agevolazione particolare, anno intero lavorato, detrazione figli 21-29 anni attribuita al 100% a questo genitore (nessuna ripartizione 50/50 modellata), nessun figlio con disabilità modellato, reddito proprio di ogni figlio assunto sotto soglia (non richiesto in input). Dettaglio completo delle semplificazioni sotto ai risultati.
     </div>
     <div id="input-warning" style="display:none; margin-top:14px; padding:12px 16px; background:var(--amber-soft); border-left:3px solid var(--amber); font-size:13.5px; color:var(--ink);"></div>
   </div>
@@ -383,7 +391,7 @@
       </div>
 
       <div class="ledger-row">
-        <div class="label">IRPEF netta (dopo detrazioni lavoro dip. e cuneo fiscale) <span class="tag stimato">fonti concordanti</span></div>
+        <div class="label">IRPEF netta (dopo detrazioni lavoro dip., cuneo fiscale e figli a carico) <span class="tag stimato">fonti concordanti</span></div>
         <div class="bar-wrap"><div class="bar-track"><div class="bar-fill" id="bar-irpef"></div></div></div>
         <div class="amount mono negative" id="row-irpef">− € 0</div>
       </div>
@@ -427,6 +435,7 @@
           <tr><td>IRPEF lorda (scaglioni 23/33/43%)</td><td class="num" id="d-irpef-lorda">€ 0</td></tr>
           <tr><td>− Detrazione lavoro dipendente</td><td class="num" id="d-detr-lav">€ 0</td></tr>
           <tr><td>− Ulteriore detrazione cuneo fiscale</td><td class="num" id="d-detr-cuneo">€ 0</td></tr>
+          <tr id="d-detr-figli-wrap" style="display:none;"><td>− Detrazione figli a carico (21-29 anni)</td><td class="num" id="d-detr-figli">€ 0</td></tr>
           <tr><td><b>IRPEF netta</b></td><td class="num" id="d-irpef-netta"><b>€ 0</b></td></tr>
         </table>
       </div>
@@ -439,6 +448,27 @@
       </div>
     </div>
 
+    <div id="figli-classificazione-box" style="display:none; margin-top:20px; padding:16px 20px; background:var(--paper-alt, #f7f5f0); border-left:3px solid var(--ink-soft); font-size:13.5px; line-height:1.6;">
+      <b>Classificazione dei figli inseriti</b>
+      <ul id="figli-lista" style="margin:8px 0 0; padding-left:20px;"></ul>
+    </div>
+
+    <div id="auu-box" style="display:none; margin-top:14px; padding:16px 20px; background:var(--emerald-soft); border-left:3px solid var(--emerald); font-size:13.5px; line-height:1.55;">
+      <b>Assegno Unico Universale — NON incluso nel netto calcolato sopra</b><br>
+      Per i figli under 21 non esiste detrazione IRPEF in busta paga: dal 2022 è sostituita dall'Assegno Unico Universale (AUU), pagato <b>separatamente e direttamente da INPS</b> ogni mese, non attraverso il datore di lavoro. L'importo dipende dall'ISEE del nucleo (non richiesto da questo calcolatore).
+      <div id="auu-under18-line" style="display:none; margin-top:8px;">
+        <b>Under 18</b> (diritto automatico, nessuna condizione): <span id="auu-u18-count"></span> figlio/i — indicativamente da <span id="auu-u18-min">€ 0</span> a <span id="auu-u18-max">€ 0</span>/mese totali, secondo ISEE. <span class="tag stimato">fonti concordanti</span>
+      </div>
+      <div id="auu-18-20-line" style="display:none; margin-top:8px;">
+        <b>18-20 anni</b> (diritto <u>condizionato</u> — verifica tu stesso se il figlio è: studente/in formazione, in tirocinio o lavoro con reddito &lt;8.000€/anno, disoccupato iscritto al centro per l'impiego, o in servizio civile): <span id="auu-1820-count"></span> figlio/i — se il requisito è soddisfatto, indicativamente da <span id="auu-1820-min">€ 0</span> a <span id="auu-1820-max">€ 0</span>/mese totali. <span class="tag non-verificato">NON VERIFICATO su fonte primaria — importi fascia 18-21 discordanti tra fonti secondarie</span>. Se nessun requisito è soddisfatto, per quel figlio non spetta né AUU né detrazione IRPEF.
+      </div>
+      Rivalutazione ISTAT +1,4% comunicata con Circolare INPS n. 7/2026. Per l'importo esatto e la verifica dei requisiti: <a href="https://servizi2.inps.it/servizi/AssegnoUnicoFigli/Simulatore" target="_blank" rel="noopener">simulatore ufficiale INPS</a>.
+    </div>
+
+    <div id="figli-30-box" style="display:none; margin-top:14px; padding:14px 18px; background:var(--amber-soft); border-left:3px solid var(--amber); font-size:13.5px; line-height:1.5;">
+      <span id="figli-30-testo"></span> — dai 30 anni in su (non disabili) non spetta più né detrazione IRPEF né Assegno Unico. Non modellato: eventuale figlio con disabilità, per cui entrambe le misure restano dovute senza limiti di età.
+    </div>
+
     <details class="mini-table" style="margin-top:24px; padding:0;">
       <summary style="cursor:pointer; padding:16px 20px; font-family:'Source Serif 4', serif; font-size:16px; border-bottom:1px solid var(--line); list-style:none;">▸ Mostra le formule usate per questo calcolo</summary>
       <table>
@@ -446,6 +476,7 @@
         <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-irpef"></td></tr>
         <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-detrlav"></td></tr>
         <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-cuneo"></td></tr>
+        <tr id="f-figli-wrap" style="display:none;"><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-figli"></td></tr>
         <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-reg"></td></tr>
         <tr><td colspan="2" style="font-family:'IBM Plex Mono',monospace; font-size:12.5px; color:var(--ink-soft);" id="f-com"></td></tr>
       </table>
@@ -500,7 +531,9 @@
         <li><b>"Reddito complessivo"</b> ai fini delle soglie di detrazione, cuneo fiscale e addizionale comunale è approssimato con la sola RAL. Nella realtà può includere altri redditi (affitti, altri rapporti di lavoro, ecc.).</li>
         <li><b>Periodo di lavoro</b> assunto pari all'intero anno (365/365 giorni): nessuna proporzione per assunzioni/cessazioni infra-annuali.</li>
         <li><b>Addizionali regionale e comunale</b> calcolate sull'anno corrente per semplicità di simulazione. Nella realtà sono trattenute in busta paga con uno sfasamento di un anno (calcolate sul reddito dell'anno precedente, versate in acconto/saldo l'anno successivo).</li>
-        <li><b>Non incluso nel calcolo</b>: welfare aziendale e fringe benefit, buoni pasto, superminimi variabili, straordinari, bonus una tantum, TFR, part-time, contratti atipici o a termine, eventuali carichi di famiglia o altre detrazioni (spese mediche, mutuo, ecc.).</li>
+        <li><b>Non incluso nel calcolo</b>: welfare aziendale e fringe benefit, buoni pasto, superminimi variabili, straordinari, bonus una tantum, TFR, part-time, contratti atipici o a termine, altre detrazioni personali (spese mediche, mutuo, ecc.).</li>
+        <li><b>Detrazione figli a carico 21-29 anni</b> (art. 12 TUIR): formula 950€ × n. figli × (soglia − reddito) / soglia, con soglia = 95.000€ + 15.000€ per ogni figlio oltre il primo. Attribuita per intero (100%) a questo genitore: non è modellata la ripartizione 50/50 tra genitori né eventuali accordi diversi. Non modellata la maggiorazione di 400€ per figli con disabilità.</li>
+        <li><b>Figli under 21</b>: nessuna detrazione IRPEF (assorbita dall'Assegno Unico Universale dal 2022). L'AUU è mostrato come nota informativa separata, con importo indicativo per fascia ISEE: NON entra nel calcolo del netto in busta paga, perché è erogato direttamente da INPS e non dal datore di lavoro.</li>
         <li><b>Contributo aggiuntivo INPS 1%</b> sopra la prima fascia di retribuzione pensionabile (56.224€/anno per il 2026, Circolare INPS n. 6/2026), applicato sulla sola quota eccedente. Non modellato invece il massimale contributivo di 122.295€ per gli iscritti post-1995 (oltre il quale i contributi IVS non sono più dovuti): per RAL sopra quella cifra i contributi qui risultano sovrastimati.</li>
         <li><b>Detrazione aggiuntiva "comma 1-bis" (fascia 25.000-35.000€, imponibile fiscale)</b>: +65€/anno, ora inclusa nel calcolo. In una prima versione era stata omessa per fonti secondarie discordanti; reintrodotta dopo conferma incrociata tra due fonti indipendenti concordanti (cafinforma.it e il calcolatore aPensione.it, che riporta l'importo esatto — 65€/anno — nel proprio prospetto).</li>
         <li><b>"Gradino" della detrazione lavoro dipendente attorno ai 15.000€ di RAL:</b> è una caratteristica reale della norma (non un bug del calcolatore) — segnalata direttamente nell'interfaccia quando la RAL inserita ricade in quella fascia.</li>
@@ -524,6 +557,8 @@
       · Detrazione lavoro dipendente (art. 13 TUIR) e ulteriore detrazione cuneo fiscale — L. 207/2024, confermata da L. 199/2025<br>
       · Trattamento integrativo — D.L. 3/2020, confermato per il 2026<br>
       · Aliquota contributiva INPS lavoratore 9,19% (L. 335/1995); soglia 1% aggiuntivo 56.224€ — <a href="https://www.inps.it/it/it/inps-comunica/notizie/dettaglio-news-page.news.2026.02.lavoratori-dipendenti-limite-minimo-di-retribuzione-giornaliera-2026.html" target="_blank" rel="noopener">Circolare INPS n. 6/2026, inps.it</a> (fonte primaria)<br>
+      · Detrazione figli a carico 21-29 anni (art. 12 TUIR, D.Lgs. 216/2023, L. 207/2024) — fonti secondarie multiple concordanti (Fiscomania, cafinforma.it, idealista.it): formula 950€ × soglia decrescente, nessuna detrazione IRPEF sotto i 21 anni<br>
+      · Assegno Unico Universale 2026, importi rivalutati ISTAT +1,4% — Circolare INPS n. 7 del 30/01/2026, citata da fonti secondarie multiple concordanti (CAF Centro Fiscale, CAF UIL Roma e Lazio); simulatore ufficiale: <a href="https://servizi2.inps.it/servizi/AssegnoUnicoFigli/Simulatore" target="_blank" rel="noopener">servizi2.inps.it</a><br>
       · Validazione incrociata su RAL 35.000€/Lombardia/Milano — <a href="https://www.coverflex.com" target="_blank" rel="noopener">coverflex.com</a>, stipendionettocalcolatore.it, apensione.it (confronto output, non fonti normative)
     </div>
   </footer>
@@ -598,6 +633,64 @@ function detrazioneLavoroDipendente(reddito){
   return Math.max(0, base);
 }
 
+// Assegno Unico Universale 2026 (Circolare INPS n. 7/2026, rivalutazione
+// ISTAT +1,4%) — solo a scopo informativo, NON entra nel calcolo del netto:
+// è erogato direttamente da INPS, non tramite il datore di lavoro.
+const AUU_2026_MIN_MENSILE = 58.30;  // under 18, senza ISEE o ISEE oltre soglia massima
+const AUU_2026_MAX_MENSILE = 203.80; // under 18, ISEE fino a circa 17.400€
+// Fascia 18-20 anni: diritto CONDIZIONATO (studio/tirocinio/disoccupazione
+// registrata/servizio civile). Importi da fonti secondarie concordanti
+// (fyscal.it) ma NON confermati su fonte primaria diretta in questa sessione
+// — fonti diverse riportano valori leggermente diversi per questa fascia.
+const AUU_2026_1820_MIN_MENSILE = 29.10;
+const AUU_2026_1820_MAX_MENSILE = 99.10;
+
+// Classifica un figlio in base all'età: restituisce una delle categorie
+// 'under18' (AUU automatico), '18-20' (AUU condizionato), '21-29' (detrazione
+// IRPEF, condizionata al reddito proprio del figlio sotto soglia — non
+// verificato da questo calcolatore), '30+' (nessuna delle due misure).
+function classificaFiglio(eta){
+  if(eta < 18) return 'under18';
+  if(eta < 21) return '18-20';
+  if(eta <= 29) return '21-29';
+  return '30+';
+}
+
+function renderFigliInputs(){
+  const n = Math.max(0, Math.min(8, parseInt(document.getElementById('num-figli').value) || 0));
+  const container = document.getElementById('figli-eta-container');
+  // preserva i valori già inseriti quando possibile
+  const valoriPrecedenti = [];
+  for(let i = 0; i < 8; i++){
+    const el = document.getElementById('figlio-eta-' + i);
+    valoriPrecedenti.push(el ? el.value : '');
+  }
+  container.innerHTML = '';
+  for(let i = 0; i < n; i++){
+    const field = document.createElement('div');
+    field.className = 'field';
+    field.style.cssText = 'flex:0 1 160px;';
+    const val = valoriPrecedenti[i] || '10';
+    field.innerHTML = '<label for="figlio-eta-' + i + '">Figlio ' + (i+1) + ' — età</label>' +
+      '<input type="number" id="figlio-eta-' + i + '" value="' + val + '" min="0" max="40" step="1">';
+    container.appendChild(field);
+  }
+}
+
+function detrazioneFigli(reddito, nFigli){
+  // Art. 12 TUIR: detrazione per figli 21-29 anni (a carico, sotto la soglia
+  // di reddito proprio). Sotto i 21 anni: nessuna detrazione IRPEF, assorbita
+  // dall'Assegno Unico Universale (mostrato separatamente, non qui).
+  // Formula: 950€ × n.figli × (soglia − reddito complessivo) / soglia,
+  // soglia = 95.000€ + 15.000€ per ogni figlio oltre il primo (qui: per ogni
+  // figlio nella fascia 21-29 presente, non sul totale dei figli in famiglia).
+  // Attribuita al 100% a questo genitore (nessuna ripartizione 50/50 modellata).
+  if(nFigli <= 0) return 0;
+  const soglia = 95000 + 15000 * (nFigli - 1);
+  const detrazione = 950 * nFigli * (soglia - reddito) / soglia;
+  return Math.max(0, detrazione);
+}
+
 function ulterioreDetrazioneCuneo(reddito){
   if(reddito > 20000 && reddito <= 32000){
     return 1000;
@@ -639,6 +732,18 @@ function calcola(){
   const ral = parseFloat(document.getElementById('ral').value) || 0;
   const mensilita = parseInt(document.getElementById('mensilita').value);
 
+  const numFigli = Math.max(0, Math.min(8, parseInt(document.getElementById('num-figli').value) || 0));
+  const etaFigli = [];
+  for(let i = 0; i < numFigli; i++){
+    const el = document.getElementById('figlio-eta-' + i);
+    etaFigli.push(el ? (parseInt(el.value) || 0) : 0);
+  }
+  const classificazioni = etaFigli.map(classificaFiglio);
+  const nFigli2129 = classificazioni.filter(c => c === '21-29').length;
+  const nFigliUnder18 = classificazioni.filter(c => c === 'under18').length;
+  const nFigli1820 = classificazioni.filter(c => c === '18-20').length;
+  const nFigli30piu = classificazioni.filter(c => c === '30+').length;
+
   const warningBox = document.getElementById('input-warning');
   warningBox.style.display = 'none';
 
@@ -669,7 +774,8 @@ function calcola(){
   // non ~1.302€ (che si otterrebbe usando erroneamente la RAL).
   const detrLavoro = detrazioneLavoroDipendente(imponibileFiscale);
   const detrCuneo = ulterioreDetrazioneCuneo(imponibileFiscale);
-  const irpefNetta = Math.max(0, irpefLorda - detrLavoro - detrCuneo);
+  const detrFigli = detrazioneFigli(imponibileFiscale, nFigli2129);
+  const irpefNetta = Math.max(0, irpefLorda - detrLavoro - detrCuneo - detrFigli);
 
   const addRegionale = progressivo(imponibileFiscale, SCAGLIONI_REGIONALE_LOMBARDIA);
   const addComunale = addizionaleComunaleMilano(imponibileFiscale);
@@ -734,7 +840,68 @@ function calcola(){
   document.getElementById('d-irpef-lorda').textContent = fmt(irpefLorda);
   document.getElementById('d-detr-lav').textContent = '− ' + fmt(detrLavoro).replace('€ ', '');
   document.getElementById('d-detr-cuneo').textContent = '− ' + fmt(detrCuneo).replace('€ ', '');
+  if(detrFigli > 0){
+    document.getElementById('d-detr-figli-wrap').style.display = 'table-row';
+    document.getElementById('d-detr-figli').textContent = '− ' + fmt(detrFigli).replace('€ ', '');
+  } else {
+    document.getElementById('d-detr-figli-wrap').style.display = 'none';
+  }
   document.getElementById('d-irpef-netta').innerHTML = '<b>' + fmt(irpefNetta) + '</b>';
+
+  // Lista di classificazione per-figlio (trasparenza: l'utente verifica lui stesso ogni figlio)
+  const listaBox = document.getElementById('figli-classificazione-box');
+  const lista = document.getElementById('figli-lista');
+  lista.innerHTML = '';
+  const etichette = {
+    'under18': 'Assegno Unico (automatico, nessuna condizione)',
+    '18-20': 'Assegno Unico SE il figlio soddisfa un requisito (studio/tirocinio/disoccupazione registrata/servizio civile) — verifica tu stesso',
+    '21-29': 'Detrazione IRPEF, inclusa nel netto calcolato sopra (assumendo reddito proprio del figlio sotto soglia)',
+    '30+': 'Nessuna detrazione IRPEF né Assegno Unico (salvo disabilità, non modellata)'
+  };
+  if(numFigli > 0){
+    etaFigli.forEach((eta, i) => {
+      const li = document.createElement('li');
+      li.textContent = 'Figlio ' + (i+1) + ' (' + eta + ' anni): ' + etichette[classificazioni[i]];
+      lista.appendChild(li);
+    });
+    listaBox.style.display = 'block';
+  } else {
+    listaBox.style.display = 'none';
+  }
+
+  // Box informativo Assegno Unico — separato dal netto, due fasce con importi diversi
+  const auuBox = document.getElementById('auu-box');
+  if(nFigliUnder18 > 0 || nFigli1820 > 0){
+    auuBox.style.display = 'block';
+    if(nFigliUnder18 > 0){
+      document.getElementById('auu-under18-line').style.display = 'block';
+      document.getElementById('auu-u18-count').textContent = nFigliUnder18;
+      document.getElementById('auu-u18-min').textContent = fmt(AUU_2026_MIN_MENSILE * nFigliUnder18);
+      document.getElementById('auu-u18-max').textContent = fmt(AUU_2026_MAX_MENSILE * nFigliUnder18);
+    } else {
+      document.getElementById('auu-under18-line').style.display = 'none';
+    }
+    if(nFigli1820 > 0){
+      document.getElementById('auu-18-20-line').style.display = 'block';
+      document.getElementById('auu-1820-count').textContent = nFigli1820;
+      document.getElementById('auu-1820-min').textContent = fmt(AUU_2026_1820_MIN_MENSILE * nFigli1820);
+      document.getElementById('auu-1820-max').textContent = fmt(AUU_2026_1820_MAX_MENSILE * nFigli1820);
+    } else {
+      document.getElementById('auu-18-20-line').style.display = 'none';
+    }
+  } else {
+    auuBox.style.display = 'none';
+  }
+
+  // Box figli 30+ (nessuna misura)
+  const box30 = document.getElementById('figli-30-box');
+  if(nFigli30piu > 0){
+    document.getElementById('figli-30-testo').textContent =
+      nFigli30piu === 1 ? 'Hai indicato 1 figlio con 30 anni o più' : 'Hai indicato ' + nFigli30piu + ' figli con 30 anni o più';
+    box30.style.display = 'block';
+  } else {
+    box30.style.display = 'none';
+  }
 
   document.getElementById('d-aliquota-marg').textContent = marginale + '%';
   document.getElementById('d-aliquota-media').textContent = fmtPct(pctTrattenute);
@@ -777,6 +944,16 @@ function calcola(){
   else if(imponibileFiscale <= 40000) cuneoFormula += '1.000 × (40.000 − ' + Math.round(imponibileFiscale) + ') / 8.000 = ' + fmt(detrCuneo);
   else cuneoFormula += 'oltre 40.000€ → nessuna detrazione aggiuntiva';
   document.getElementById('f-cuneo').innerHTML = cuneoFormula;
+  if(nFigli2129 > 0){
+    const sogliaFigli = 95000 + 15000 * (nFigli2129 - 1);
+    document.getElementById('f-figli-wrap').style.display = 'table-row';
+    document.getElementById('f-figli').innerHTML =
+      'Detrazione figli 21-29 anni (art. 12 TUIR, 100% a questo genitore): 950 × ' + nFigli2129 +
+      ' × (' + fmt(sogliaFigli).replace('€ ','') + ' − ' + Math.round(imponibileFiscale) + ') / ' + fmt(sogliaFigli).replace('€ ','') +
+      ' = ' + fmt(detrFigli);
+  } else {
+    document.getElementById('f-figli-wrap').style.display = 'none';
+  }
   document.getElementById('f-reg').innerHTML =
     'Add. regionale Lombardia: scaglioni 1,23%/1,58%/1,72%/1,73% su ' + fmt(imponibileFiscale) + ' = ' + fmt(addRegionale);
   document.getElementById('f-com').innerHTML =
@@ -789,10 +966,16 @@ function calcola(){
 
 // calcolo automatico al primo caricamento con i valori di default
 window.addEventListener('DOMContentLoaded', function(){
+  renderFigliInputs();
   calcola();
   // invio da tastiera = calcola (comportamento atteso da chiunque testi il tool)
   document.getElementById('ral').addEventListener('keydown', function(e){
     if(e.key === 'Enter') calcola();
+  });
+  // cambiando il numero di figli si rigenerano i campi età
+  document.getElementById('num-figli').addEventListener('input', function(){
+    renderFigliInputs();
+    calcola();
   });
 });
 </script>

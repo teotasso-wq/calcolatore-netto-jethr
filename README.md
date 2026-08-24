@@ -10,7 +10,7 @@ Supporta anche figli a carico: si inserisce l'età di ciascun figlio e il calcol
 
 - **under 18** → Assegno Unico Universale (AUU), automatico
 - **18-20 anni** → AUU, ma solo se il figlio soddisfa un requisito specifico (studio/formazione, tirocinio o lavoro <8.000€/anno, disoccupazione registrata, servizio civile) — il calcolatore segnala la condizione, non può verificarla
-- **21-29 anni** → detrazione IRPEF (art. 12 TUIR), inclusa nel calcolo del netto in busta paga
+- **21-29 anni** → detrazione IRPEF (art. 12 TUIR), inclusa nel calcolo del netto in busta paga. Selezionabile 100% a questo genitore oppure 50% ripartita tra i due genitori — la formula usa una soglia comune per tutti i figli della fascia, quindi dimezzare il totale equivale a dimezzare ciascun figlio singolarmente (verificato con test manuali su 1, 2 e 3 figli)
 - **30+ anni** → nessuna delle due misure (salvo disabilità, non modellata)
 
 Punto importante: l'AUU è erogato **separatamente da INPS**, non attraverso il datore di lavoro, quindi è mostrato come nota informativa distinta e non entra nel netto calcolato. Solo la detrazione per i figli 21-29 modifica davvero il netto in busta paga.
@@ -23,7 +23,7 @@ Ogni riga del risultato è espandibile nella sezione "Mostra le formule usate": 
 - Residente a Milano
 - Nessuna agevolazione particolare oltre a quelle per figli a carico modellate
 - Anno intero lavorato (365/365)
-- Detrazione figli 21-29 anni attribuita al 100% a questo genitore (nessuna ripartizione 50/50)
+- Detrazione figli 21-29 anni: ripartizione selezionabile (100% a questo genitore, oppure 50% tra i due genitori); nessun accordo diverso dal 50/50 modellato
 - Reddito proprio di ogni figlio assunto sotto soglia (non richiesto in input)
 - Nessun figlio con disabilità modellato
 

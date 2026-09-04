@@ -318,6 +318,16 @@
 
   <div class="panel">
     <div class="form-row">
+      <div class="field" style="flex:1 1 260px;">
+        <label for="sel-ccnl">CCNL (facoltativo — precompila la RAL dal minimo)</label>
+        <select id="sel-ccnl"><option value="">Nessun CCNL selezionato</option></select>
+      </div>
+      <div class="field" style="flex:1 1 260px;">
+        <label for="sel-livello">Livello</label>
+        <select id="sel-livello" disabled><option value="">Seleziona prima un CCNL</option></select>
+      </div>
+    </div>
+    <div class="form-row" style="margin-top:14px;">
       <div class="field">
         <label for="ral">RAL — retribuzione annua lorda (€)</label>
         <input type="number" id="ral" value="32000" min="1" step="500">
@@ -334,6 +344,7 @@
         <button class="btn" onclick="calcola()">Calcola netto</button>
       </div>
     </div>
+    <div id="ccnl-note" style="display:none; margin-top:10px; padding:10px 14px; background:var(--emerald-soft); border-left:3px solid var(--emerald); font-size:12.5px; line-height:1.5;"></div>
     <div class="form-row" style="margin-top:14px;">
       <div class="field" style="flex:1 1 200px;">
         <label for="sel-regione">Regione</label>
@@ -615,7 +626,71 @@ const SCAGLIONI_IRPEF = [
   [50000, Infinity, 0.43]
 ];
 
-// --- dati geografici multi-comune (caricati da JSON esterni, fonte MEF) ---
+// --- dati CCNL (facoltativi, precompilano RAL + mensilità) ---
+let CCNL_DATI = {};
+
+async function caricaDatiCCNL(){
+  CCNL_DATI = await fetch('ccnl-tabelle.json').then(r => r.json());
+  const sel = document.getElementById('sel-ccnl');
+  sel.innerHTML = '<option value="">Nessun CCNL selezionato</option>';
+  Object.keys(CCNL_DATI).forEach(chiave => {
+    const opt = document.createElement('option');
+    opt.value = chiave;
+    opt.textContent = CCNL_DATI[chiave].nome;
+    sel.appendChild(opt);
+  });
+}
+
+function popolaSelectLivelli(){
+  const chiaveCCNL = document.getElementById('sel-ccnl').value;
+  const selLiv = document.getElementById('sel-livello');
+  const note = document.getElementById('ccnl-note');
+  selLiv.innerHTML = '';
+
+  if(!chiaveCCNL || !CCNL_DATI[chiaveCCNL]){
+    selLiv.innerHTML = '<option value="">Seleziona prima un CCNL</option>';
+    selLiv.disabled = true;
+    note.style.display = 'none';
+    return;
+  }
+
+  const ccnl = CCNL_DATI[chiaveCCNL];
+  selLiv.disabled = false;
+  selLiv.innerHTML = '<option value="">Seleziona livello…</option>';
+  ccnl.livelli.forEach((l, i) => {
+    const opt = document.createElement('option');
+    opt.value = i;
+    opt.textContent = l.livello + ' — ' + fmt(l.minimo) + '/mese';
+    selLiv.appendChild(opt);
+  });
+
+  const tagAffidabilita = ccnl.affidabilita.startsWith('verificato')
+    ? '<span class="tag verificato">verificato</span>'
+    : '<span class="tag stimato">stimato</span>';
+  note.innerHTML = 'Minimo tabellare, ' + ccnl.mensilita + ' mensilità, decorrenza ' + ccnl.decorrenza + '. ' + tagAffidabilita +
+    '<br><span style="color:var(--ink-soft);">' + ccnl.nota + '</span>';
+  note.style.display = 'block';
+}
+
+function applicaLivelloCCNL(){
+  const chiaveCCNL = document.getElementById('sel-ccnl').value;
+  const idxLivello = document.getElementById('sel-livello').value;
+  if(!chiaveCCNL || idxLivello === '') return;
+
+  const ccnl = CCNL_DATI[chiaveCCNL];
+  const livello = ccnl.livelli[idxLivello];
+  if(!livello) return;
+
+  // RAL = minimo mensile x mensilità del contratto (base minima, poi modificabile
+  // a mano dall'utente per riflettere scatti/superminimi/elementi variabili non modellati)
+  const ralPrecompilata = Math.round(livello.minimo * ccnl.mensilita);
+  document.getElementById('ral').value = ralPrecompilata;
+  document.getElementById('mensilita').value = String(ccnl.mensilita);
+
+  calcola();
+}
+
+
 let ALBERO = {};      // regione -> provincia -> [{codice, nome}]
 let COMUNI = {};      // codice catastale -> record addizionale comunale
 let REGIONI = {};     // nome regione -> record addizionale regionale
@@ -1170,9 +1245,10 @@ window.addEventListener('DOMContentLoaded', async function(){
 
   try {
     await caricaDatiGeografici();
+    await caricaDatiCCNL();
   } catch(e) {
     document.getElementById('input-warning').textContent =
-      'Impossibile caricare i dati geografici (albero-geografico.json, comuni-addizionale.json, regioni-addizionale.json devono stare nella stessa cartella di questa pagina). Dettaglio: ' + e.message;
+      'Impossibile caricare i dati (albero-geografico.json, comuni-addizionale.json, regioni-addizionale.json, ccnl-tabelle.json devono stare nella stessa cartella di questa pagina). Dettaglio: ' + e.message;
     document.getElementById('input-warning').style.display = 'block';
   }
 
@@ -1200,6 +1276,10 @@ window.addEventListener('DOMContentLoaded', async function(){
     calcola();
   });
   document.getElementById('sel-comune').addEventListener('change', calcola);
+
+  // CCNL -> Livello -> precompila RAL + mensilità
+  document.getElementById('sel-ccnl').addEventListener('change', popolaSelectLivelli);
+  document.getElementById('sel-livello').addEventListener('change', applicaLivelloCCNL);
 });
 </script>
 
